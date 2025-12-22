@@ -1,9 +1,9 @@
 import "./style.css";
 
 async function getData() {
-  //something CORS problem so we need this i need help whalen
+  //something CORS problem so we need this i need help whalen https://cors-anywhere.herokuapp.com/corsdemo
   const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-  const targetUrl = "http://asterank.com/api/asterank?query={}&limit=1000";
+  const targetUrl = "http://asterank.com/api/asterank?query={}&limit=100";
   const apiUrl = proxyUrl + targetUrl;
 
   try {
