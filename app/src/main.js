@@ -1,5 +1,5 @@
 import "./style.css";
-import * as d3 from "d3";
+/* import * as d3 from "d3"; */
 
 async function getData() {
   //something CORS problem so we need this i need help whalen https://cors-anywhere.herokuapp.com/corsdemo
@@ -15,7 +15,7 @@ async function getData() {
     }
 
     const asteroids = await response.json();
-    asteroids.array.forEach((asteroid) => {
+    asteroids.forEach((asteroid) => {
       inject(asteroid);
     });
 
