@@ -16,6 +16,9 @@ async function getData() {
 
     const asteroids = await response.json();
     asteroids.forEach((asteroid) => {
+      if (asteroid.price === 0) {
+        asteroid.price = "No data available :(";
+      }
       inject(asteroid);
     });
 
@@ -30,10 +33,15 @@ getData();
 function inject(asteroid) {
   document.querySelector("#api-response").insertAdjacentHTML(
     "beforeend",
-    `
-        <div class="asteroid">
-          <h1 id =${asteroid.pdes}>${asteroid.name}</h1>
-        </div>`
+    `<div class='card w-96 bg-base-100 shadow-xl m-4'>
+  <div class="card-contents">
+    <h2 class="card-title" id = ${asteroid.pdes}>${asteroid.name}</h2>
+    <p>cost = ${asteroid.price}</p>
+  </div>
+  <figure>
+  <img src="https://nypost.com/wp-content/uploads/sites/2/2023/01/asteroid-earth.jpg" alt="Shoes" />
+  </figure>
+</div>`
   );
 }
 
