@@ -1,6 +1,35 @@
 import "./style.css";
-/* import * as d3 from "d3"; */
+import * as d3 from "d3";
+var svg = d3
+  .select("#circle")
+  .append("svg")
+  .attr("width", 200)
+  .attr("height", 200);
 
+// Add the path using this helper function
+svg
+  .append("circle")
+  .attr("cx", 100)
+  .attr("cy", 100)
+  .attr("r", 50)
+  .attr("stroke", "black")
+  .attr("fill", "#69a3b2");
+
+function drawCircle(selector) {
+  const svg = d3
+    .select(selector)
+    .append("svg")
+    .attr("width", 200)
+    .attr("height", 200);
+
+  svg
+    .append("circle")
+    .attr("cx", 100)
+    .attr("cy", 100)
+    .attr("r", 50)
+    .attr("stroke", "black")
+    .attr("fill", "#69a3b2");
+}
 async function getData() {
   //something CORS problem so we need this i need help whalen https://cors-anywhere.herokuapp.com/corsdemo
   const proxyUrl = "https://cors-anywhere.herokuapp.com/";
@@ -33,18 +62,21 @@ getData();
 function inject(asteroid) {
   document.querySelector("#api-response").insertAdjacentHTML(
     "beforeend",
-    `<div class='card w-96 bg-base-100 shadow-xl m-4'>
-  <div class="card-contents">
-    <h2 class="card-title" id = ${asteroid.pdes}>${asteroid.name}</h2>
-    <p>cost = ${asteroid.price}</p>
-  </div>
-  <figure>
-  <img src="https://nypost.com/wp-content/uploads/sites/2/2023/01/asteroid-earth.jpg" alt="Shoes" />
-  </figure>
-</div>`
+    `<div class='card w-108 bg-base-100 shadow-xl m-4 p-6'>
+      <div class="card-contents">
+        <h2 class="card-title" id="${asteroid.pdes}">${asteroid.name}</h2>
+        <p>cost = ${asteroid.price}</p>
+      </div>
+      <figure>
+        <div class="asteroid-vis" id="vis-${asteroid.pdes}"></div>
+      </figure>
+    </div>`
   );
+
+  drawCircle(`#vis-${asteroid.pdes}`);
 }
 
+// img src is the faceholder for d3 making the ball
 /* 
 
 ONLY 2D IMAGES, DISREGARD 3D DIMENSIONS
@@ -60,4 +92,8 @@ color = {
     'V': 0.713,  # Visual brightness  
     'U': 0.426   # Ultraviolet brightness
 }
+
+
+this is my planning doc.
+We need a scale for size based on diameter, essential divide each diamaeter into PX based on all diameters (cuz we need to make a converter, where max is 200x200)
  */
