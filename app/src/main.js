@@ -3,8 +3,8 @@ import * as d3 from "d3";
 var svg = d3
   .select("#circle")
   .append("svg")
-  .attr("width", 200)
-  .attr("height", 200);
+  .attr("width", 250)
+  .attr("height", 250);
 
 // Add the path using this helper function
 svg
@@ -15,20 +15,124 @@ svg
   .attr("stroke", "black")
   .attr("fill", "#69a3b2");
 
-function drawCircle(selector) {
+// Function to get asteroid color based on spectral type and albedo
+function getAsteroidColor(asteroid) {
+  // Get spectral type (prefer spec_B, fall back to spec)
+  const spectralType = asteroid.spec_B || asteroid.spec || "";
+  const albedo = parseFloat(asteroid.albedo) || 0.15;
+
+  // Base colors for different spectral types
+  const baseColors = {
+    // Carbonaceous asteroids (dark)
+    C: { r: 90, g: 70, b: 56 }, // Dark brown
+    B: { r: 45, g: 36, b: 30 }, // Darker brown/black
+    Ch: { r: 74, g: 59, b: 50 }, // Carbonaceous hydrated
+    Cb: { r: 85, g: 68, b: 56 }, // Carbonaceous B-type
+    Cg: { r: 73, g: 61, b: 51 }, // Carbonaceous G-type
+
+    // Stony/Silicaceous asteroids
+    S: { r: 212, g: 167, b: 106 }, // Sandy brown
+    Sa: { r: 229, g: 185, b: 122 }, // Lighter sandy
+    Sq: { r: 201, g: 154, b: 90 }, // Stony Q-type
+    Sk: { r: 188, g: 140, b: 74 }, // Stony K-type
+    Sl: { r: 215, g: 173, b: 115 }, // Stony L-type
+
+    // Metallic asteroids
+    M: { r: 176, g: 176, b: 176 }, // Metallic gray
+    X: { r: 200, g: 200, b: 200 }, // Bright metallic
+    Xe: { r: 208, g: 208, b: 208 }, // Enstatite
+    Xk: { r: 192, g: 192, b: 192 }, // Metallic with silicates
+    Xc: { r: 184, g: 184, b: 184 }, // Carbonaceous metallic
+
+    // Vesta family (basaltic)
+    V: { r: 139, g: 69, b: 19 }, // Saddle brown
+
+    // Enstatite asteroids
+    E: { r: 245, g: 245, b: 220 }, // Light beige
+
+    // Other types
+    G: { r: 125, g: 105, b: 66 }, // Olive brown
+    P: { r: 140, g: 120, b: 83 }, // Bronze
+    D: { r: 92, g: 64, b: 51 }, // Dark red-brown
+    T: { r: 101, g: 67, b: 33 }, // Dark brown (T-type)
+    F: { r: 156, g: 138, b: 107 }, // Tan
+    Q: { r: 210, g: 180, b: 140 }, // Tan
+
+    // Unknown/fallback
+    "": { r: 160, g: 160, b: 160 }, // Gray
+  };
+
+  // Get base color or use default
+  const baseColor = baseColors[spectralType] || baseColors[""];
+
+  // Adjust brightness based on albedo
+  // Albedo ranges from ~0.03 (very dark) to ~0.6 (very bright)
+  // Map albedo 0.03-0.6 to brightness 0.3-1.0
+  const minAlbedo = 0.03;
+  const maxAlbedo = 0.6;
+  const normalizedAlbedo = Math.min(Math.max(albedo, minAlbedo), maxAlbedo);
+  const brightness =
+    0.3 + ((normalizedAlbedo - minAlbedo) / (maxAlbedo - minAlbedo)) * 0.7;
+
+  // Apply brightness to color
+  const r = Math.round(baseColor.r * brightness);
+  const g = Math.round(baseColor.g * brightness);
+  const b = Math.round(baseColor.b * brightness);
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function drawCircle(selector, asteroid) {
+  // Find maximum asteroid diameter to scale against
+  // Ceres is the largest at 939.4 km in your sample data
+  const maxDiameter = 939.4;
+
+  // Calculate scaled radius
+  const maxRadius = 90; // Maximum radius in pixels (leaves some margin)
+  const scaledRadius = (asteroid.diameter / maxDiameter) * maxRadius;
+
+  // Minimum radius so small asteroids are still visible
+  const minRadius = 5;
+  const radius = Math.max(scaledRadius, minRadius);
+
+  // Get color based on asteroid properties
+  const asteroidColor = getAsteroidColor(asteroid);
+
   const svg = d3
     .select(selector)
     .append("svg")
-    .attr("width", 200)
-    .attr("height", 200);
+    .attr("width", 250)
+    .attr("height", 250);
 
+  // Draw the asteroid circle
   svg
     .append("circle")
     .attr("cx", 100)
     .attr("cy", 100)
-    .attr("r", 50)
+    .attr("r", radius)
     .attr("stroke", "black")
-    .attr("fill", "#69a3b2");
+    .attr("stroke-width", 1)
+    .attr("fill", asteroidColor);
+
+  // Add a label with diameter
+  svg
+    .append("text")
+    .attr("x", 100)
+    .attr("y", 100 - radius - 5)
+    .attr("text-anchor", "middle")
+    .attr("font-size", "12px")
+    .attr("fill", "black")
+    .text(`${asteroid.diameter} km`);
+
+  // Add spectral type label
+  svg
+    .append("text")
+    .attr("x", 100)
+    .attr("y", 100 + radius + 15)
+    .attr("text-anchor", "middle")
+    .attr("font-size", "10px")
+    .attr("fill", "gray")
+    .text(`${asteroid.spec_B || asteroid.spec || "?"}-type`);
 }
 
 const earthDiameter = 12742; // km
@@ -62,7 +166,7 @@ async function getData() {
 
     console.log(`Total asteroids: ${asteroids.length}`);
   } catch (error) {
-    console.error("Failed to fetch asteroids:", error);
+    console.error("Failed to fetch asteroids:");
   }
 }
 
@@ -74,10 +178,17 @@ function inject(asteroid, comparison) {
     `<div class='card w-108 bg-base-100 shadow-xl m-4 p-6'>
       <div class="card-contents">
         <h2 class="card-title" id="${asteroid.pdes}">${asteroid.name}</h2>
-        <p>cost = ${asteroid.price}</p>
-        <p> Compared to the asteriod's diameter of ${
-          asteroid.diameter
-        }, Earth is ${comparison.toFixed(4)}x its diameter.</p>
+        <p><strong>Cost:</strong> ${asteroid.price}</p>
+        <p><strong>Diameter:</strong> ${asteroid.diameter} km</p>
+        <p><strong>Comparison:</strong> ${(comparison * 100).toFixed(
+          2
+        )}% of Earth's diameter</p>
+        <p><strong>Spectral Type:</strong> ${
+          asteroid.spec_B || asteroid.spec || "Unknown"
+        }</p>
+        <p><strong>Albedo:</strong> ${asteroid.albedo || "Unknown"}</p>
+        
+
       </div>
       <figure>
         <div class="asteroid-vis" id="vis-${asteroid.pdes}"></div>
@@ -85,185 +196,31 @@ function inject(asteroid, comparison) {
     </div>`
   );
 
-  drawCircle(`#vis-${asteroid.pdes}`);
+  drawCircle(`#vis-${asteroid.pdes}`, asteroid);
 }
+async function filter() {
+  //something CORS problem so we need this i need help whalen https://cors-anywhere.herokuapp.com/corsdemo
+  const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+  const targetUrl = "http://asterank.com/api/asterank?query={}&limit=100";
+  const apiUrl = proxyUrl + targetUrl;
 
-// img src is the faceholder for d3 making the ball
-/* 
+  try {
+    const response = await fetch(apiUrl, {
+      headers: {
+        Origin: window.location.origin,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
 
-ONLY 2D IMAGES, DISREGARD 3D DIMENSIONS
-physical features:
-diameter = 939.4  # km (average)
-dimensions = [964.4, 964.2, 891.8]  # km (x, y, z axes)
-# These give you the ellipsoid shape
-2. Surface Appearance
-python
-albedo = 0.09  # How dark/bright (0-1)
-color = BV AND UB 
-}
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
 
+    const asteroids = await response.json();
+    asteroids.forEach((asteroid) => {});
 
-this is my planning doc.
-We need a scale for size based on diameter, essential divide each diamaeter into PX based on all diameters (cuz we need to make a converter, where max is 200x200)
- */
-
-/* function asteroidColorToRGB(bv, ub, albedo) {
-  // Default values if missing
-  bv = bv || 0.65; // Default BV for asteroids
-  ub = ub || 0.42; // Default UB for asteroids
-  albedo = albedo || 0.15; // Default albedo
-
-  // Convert BV and UB to temperature approximation (simplified)
-  // This is a rough approximation for asteroids
-  const temperature = 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
-
-  // Temperature to RGB conversion (blackbody radiation)
-  let r, g, b;
-
-  if (temperature <= 1000) {
-    // Very cool - deep red
-    r = 1.0;
-    g = 0.0;
-    b = 0.0;
-  } else if (temperature <= 2000) {
-    // Cool - red
-    r = 1.0;
-    g = 0.2;
-    b = 0.0;
-  } else if (temperature <= 3000) {
-    // Warm - orange
-    r = 1.0;
-    g = 0.5;
-    b = 0.0;
-  } else if (temperature <= 4000) {
-    // Moderate - yellow
-    r = 1.0;
-    g = 0.8;
-    b = 0.0;
-  } else if (temperature <= 5000) {
-    // Solar-type - yellowish white
-    r = 1.0;
-    g = 1.0;
-    b = 0.8;
-  } else if (temperature <= 6000) {
-    // White
-    r = 1.0;
-    g = 1.0;
-    b = 1.0;
-  } else {
-    // Hot - bluish white
-    r = 0.8;
-    g = 0.9;
-    b = 1.0;
+    console.log("mr whalen do actually look at this?");
+  } catch (error) {
+    console.error("Failed to fetch asteroids:", error);
   }
-
-  // Adjust brightness based on albedo
-  const brightness = 0.2 + albedo * 0.6; // Scale albedo to brightness
-
-  // Apply brightness
-  r = Math.min(1, r * brightness);
-  g = Math.min(1, g * brightness);
-  b = Math.min(1, b * brightness);
-
-  // Adjust based on UB index (ultraviolet affects blue)
-  if (ub < 0) {
-    // More ultraviolet - slightly bluer
-    b = Math.min(1, b * 1.2);
-  } else if (ub > 0.5) {
-    // Less ultraviolet - slightly redder
-    r = Math.min(1, r * 1.1);
-  }
-
-  // Convert to RGB 0-255 values
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
-    rgb: `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(
-      b * 255
-    )})`,
-  };
 }
-
-// Alternative: Simple spectral type to color mapping (more reliable)
-function spectralTypeToColor(spectralType, albedo) {
-  const colorMap = {
-    // Carbonaceous (dark)
-    C: { r: 90, g: 70, b: 56 }, // Dark brown
-    B: { r: 45, g: 36, b: 30 }, // Darker brown/black
-    Ch: { r: 74, g: 59, b: 50 }, // Carbonaceous hydrated
-    Cb: { r: 85, g: 68, b: 56 }, // Carbonaceous B-type
-    Cg: { r: 73, g: 61, b: 51 }, // Carbonaceous G-type
-
-    // Stony/Silicaceous
-    S: { r: 212, g: 167, b: 106 }, // Sandy brown
-    Sa: { r: 229, g: 185, b: 122 }, // Lighter sandy
-    Sq: { r: 201, g: 154, b: 90 }, // Stony Q-type
-    Sk: { r: 188, g: 140, b: 74 }, // Stony K-type
-    Sl: { r: 215, g: 173, b: 115 }, // Stony L-type
-
-    // Metallic
-    M: { r: 176, g: 176, b: 176 }, // Metallic gray
-    X: { r: 200, g: 200, b: 200 }, // Bright metallic
-    Xe: { r: 208, g: 208, b: 208 }, // Enstatite
-
-    // Vesta family (basaltic)
-    V: { r: 139, g: 69, b: 19 }, // Saddle brown
-
-    // Enstatite
-    E: { r: 245, g: 245, b: 220 }, // Light beige
-
-    // Fallback/default
-    "": { r: 160, g: 160, b: 160 }, // Gray
-  };
-
-  const baseColor = colorMap[spectralType] || colorMap[""];
-
-  // Adjust brightness based on albedo
-  const brightness = 0.5 + albedo * 0.5;
-
-  return {
-    r: Math.round(baseColor.r * brightness),
-    g: Math.round(baseColor.g * brightness),
-    b: Math.round(baseColor.b * brightness),
-    rgb: `rgb(${Math.round(baseColor.r * brightness)}, ${Math.round(
-      baseColor.g * brightness
-    )}, ${Math.round(baseColor.b * brightness)})`,
-  };
-}
-
-// Combined approach: Use BV/UB if available, otherwise use spectral type
-function getAsteroidColor(asteroid) {
-  const bv = parseFloat(asteroid.BV);
-  const ub = parseFloat(asteroid.UB);
-  const albedo = parseFloat(asteroid.albedo) || 0.15;
-  const spectralType = asteroid.spec || asteroid.spec_B || "";
-
-  // If we have BV and UB values, use the physics-based conversion
-  if (!isNaN(bv) && !isNaN(ub)) {
-    return asteroidColorToRGB(bv, ub, albedo);
-  }
-
-  // Otherwise use spectral type mapping
-  return spectralTypeToColor(spectralType, albedo);
-}
-
-// Usage in your drawCircle function:
-function drawCircle(selector, asteroid) {
-  const color = getAsteroidColor(asteroid);
-
-  const svg = d3
-    .select(selector)
-    .append("svg")
-    .attr("width", 200)
-    .attr("height", 200);
-
-  svg
-    .append("circle")
-    .attr("cx", 100)
-    .attr("cy", 100)
-    .attr("r", 50)
-    .attr("stroke", "black")
-    .attr("fill", color.rgb); // Use the calculated color
-}
- */
