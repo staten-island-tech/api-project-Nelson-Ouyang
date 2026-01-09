@@ -201,7 +201,8 @@ function inject(asteroid, comparison) {
 async function filter() {
   //something CORS problem so we need this i need help whalen https://cors-anywhere.herokuapp.com/corsdemo
   const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-  const targetUrl = "http://asterank.com/api/asterank?query={}&limit=100";
+  const targetUrl =
+    "https://www.asterank.com/api/asterank?query=%7B%22albedo%22%3A%7B%22%24gt%22%3A0.15%7D%7D&limit=100";
   const apiUrl = proxyUrl + targetUrl;
 
   try {
@@ -217,10 +218,21 @@ async function filter() {
     }
 
     const asteroids = await response.json();
-    asteroids.forEach((asteroid) => {});
+
+    printStuff(asteroids);
 
     console.log("mr whalen do actually look at this?");
   } catch (error) {
     console.error("Failed to fetch asteroids:", error);
   }
+}
+filter();
+function printStuff(asteroids) {
+  document.getElementById("fetch-data").addEventListener("click", () => {
+    document.getElementById("api-response").innerHTML = "";
+    console.log(asteroids);
+    asteroids.forEach((asteroid) => {
+      inject(asteroid);
+    });
+  });
 }
