@@ -175,7 +175,8 @@ getData();
 function inject(asteroid, comparison) {
   document.querySelector("#api-response").insertAdjacentHTML(
     "beforeend",
-    `<div class='card w-108 bg-base-100 shadow-xl m-4 p-6'>
+    `<div class=" bg-base-100 shadow-xl p-6">
+
       <div class="card-contents">
         <h2 class="card-title" id="${asteroid.pdes}">${asteroid.name}</h2>
         <p><strong>Cost:</strong> ${asteroid.price}</p>
@@ -227,6 +228,7 @@ async function filter() {
   }
 }
 filter();
+
 function printStuff(asteroids) {
   document.getElementById("fetch-data").addEventListener("click", () => {
     document.getElementById("api-response").innerHTML = "";
