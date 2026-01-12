@@ -175,7 +175,7 @@ getData();
 function inject(asteroid, comparison) {
   document.querySelector("#api-response").insertAdjacentHTML(
     "beforeend",
-    `<div class=" bg-base-100 shadow-xl p-6">
+    `<div class='card w-106 bg-base-100 shadow-xl m-4 p-6'>
 
       <div class="card-contents">
         <h2 class="card-title" id="${asteroid.pdes}">${asteroid.name}</h2>
